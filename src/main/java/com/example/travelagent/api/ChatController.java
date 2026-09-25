@@ -2,14 +2,15 @@ package com.example.travelagent.api;
 
 import java.util.UUID;
 
+import com.example.travelagent.advisor.TimeoutAdvisor;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,21 +25,10 @@ public class ChatController {
 
 	private static final Log logger = LogFactory.getLog(ChatController.class);
 
-	private static final String SYSTEM_PROMPT = """
-			You are a friendly, knowledgeable travel agent. Help the user plan trips: suggest destinations,
-			itineraries, activities, food, budgets, best times to visit, and practical tips (visas, transport,
-			packing). Ask a short clarifying question when key details such as dates, budget or interests are
-			missing. Keep answers concise and well structured. If a question is unrelated to travel, briefly
-			say so and steer back to travel planning. Do not invent live prices or availability; give typical
-			ranges and suggest where to check.
-			""";
-
 	private final ChatClient chatClient;
 
-	public ChatController(ChatClient.Builder chatClientBuilder, ChatMemory chatMemory) {
-		this.chatClient = chatClientBuilder.defaultSystem(SYSTEM_PROMPT)
-			.defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
-			.build();
+	public ChatController(ChatClient chatClient) {
+		this.chatClient = chatClient;
 	}
 
 	@PostMapping("/chat")
@@ -53,6 +43,11 @@ public class ChatController {
 				.content();
 			return new ChatResponse(conversationId, reply);
 		}
+		catch (TimeoutAdvisor.ChatTimeoutException ex) {
+			logger.warn(ex.getMessage());
+			throw new ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT,
+					"The AI took too long to answer. Please try again.", ex);
+		}
 		catch (RuntimeException ex) {
 			logger.error("Chat request to the AI model failed", ex);
 			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
@@ -60,7 +55,7 @@ public class ChatController {
 		}
 	}
 
-	public record ChatRequest(@NotBlank @Size(max = 4000) String message, @Size(max = 64) String conversationId) {
+	public record ChatRequest(@NotBlank @Size(max = 4000) String message, @Pattern(regexp = "[A-Za-z0-9-]{1,64}") String conversationId) {
 	}
 
 	public record ChatResponse(String conversationId, String reply) {
