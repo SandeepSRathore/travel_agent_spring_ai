@@ -3,6 +3,26 @@
 Spring Boot 4.1 (Java 25) backend with a React + Vite + TypeScript frontend, in a single Maven project.
 Spring AI 2.0 (OpenAI starter) powers a travel-agent chat at `POST /api/chat`; the React UI is a chat window.
 
+## Demo
+
+Screenshots from the running app (`gpt-5-mini`).
+
+**Start a conversation** — pick a suggestion or type your own question.
+
+![Welcome screen with suggested questions](docs/screenshots/01-welcome.png)
+
+**Get a trip plan** — the assistant answers as a travel agent.
+
+![A 3-day nature getaway plan from Bangalore](docs/screenshots/02-trip-plan.png)
+
+**Ask follow-ups** — conversation memory keeps context, so "which of these" refers to the options above.
+
+![Follow-up question answered using the earlier options](docs/screenshots/03-follow-up-memory.png)
+
+**Guardrails and dark mode** — harmful requests are blocked by the moderation advisor before reaching the model, and the chat carries on normally.
+
+![A harmful request blocked, followed by a normal answer, in dark mode](docs/screenshots/04-guardrail-dark.png)
+
 ## Layout
 
 - `src/main/java` – Spring Boot app (REST APIs under `/api`)
